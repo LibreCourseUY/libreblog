@@ -1,7 +1,10 @@
 baseURL = "https://blog.librecourse.uy"
-languageCode = "es-UY"
 title = "LibreCourseUY"
 theme = "PaperMod"
+
+[languages.en]
+  locale = "en-US"
+  weight = 1
 
 [params]
   description = "LibreCourseUY Dev Log"
