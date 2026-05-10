@@ -6,9 +6,6 @@ theme = "PaperMod"
 [params]
   description = "Blog de LibreCourse"
 
-[permalinks]
-  blog = "/:sections/:slug/"
-
 [menu]
   [[menu.main]]
     name = "Blog"
