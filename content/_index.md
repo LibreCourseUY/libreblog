@@ -1,1 +1,0 @@
-# LibreCourseUY Blog!
