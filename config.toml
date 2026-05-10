@@ -4,11 +4,15 @@ title = "LibreCourseUY"
 theme = "PaperMod"
 
 [params]
-  description = "Blog de LibreCourse"
+  description = "LibreCourseUY Dev Log"
+
+[params.homeInfoParams]
+  Title = "LibreCourseUY Latest Updates"
+  Content = ""
 
 [menu]
   [[menu.main]]
-    name = "Blog"
+    name = "Home"
     url = "/"
     weight = 1
   [[menu.main]]
