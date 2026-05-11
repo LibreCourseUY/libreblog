@@ -1,5 +1,5 @@
 ---
-title: "🇺🇾 LibreCourseUY"
+title: "LibreCourseUY"
 ---
 
 Welcome to LibreCourseUY's dev log!
