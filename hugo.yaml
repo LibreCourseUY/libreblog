@@ -22,7 +22,7 @@ params:
   ShowBreadCrumbs: true
   ShowCodeCopyButtons: true
   ShowWordCount: true
-  ShowRssButtonInSectionTermList: true
+  ShowRssButtonInSectionTermList: false
   UseHugoToc: true
   hidemeta: false
   hideSummary: false
@@ -30,8 +30,8 @@ params:
   tocopen: false
 
   homeInfoParams:
-    Title: "sadasd"
-    Content: "sadasd"
+    Title: ""
+    Content: ""
   socialIcons:
     - name: github
       url: "https://github.com/LibreCourseUY"
