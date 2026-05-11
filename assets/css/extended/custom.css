@@ -1,0 +1,8 @@
+.first-entry {
+    margin-top: 0 !important;
+    min-height: unset;
+}
+
+.home-info .entry-content {
+    color: var(--primary);
+}
