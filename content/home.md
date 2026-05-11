@@ -21,7 +21,7 @@ In this page, we document everything we do, from codenights, events, project (an
   <span style="color: #d1242f; font-size: 1em; line-height: 1.6;">⚠</span>
   <div>
     <strong style="color: #d1242f; display: block; margin-bottom: 2px;">Warning</strong>
-    This site is still under construction and not up to date.
+    This site is still under construction and not fully up to date.
   </div>
 </div>
 
@@ -31,6 +31,10 @@ LibreCourseUY is a non-profit initiative based in Uruguay that helps programmers
 ### About this Dev Log
 The purpose of this Dev Log is to allow newly joined dev to see what we've been up to, and what do they need to check on to work on our projects.
 
+Some of this pages are written by me (The Editor), but other may be written by other LCUY members, as this is an [open sourced blog](https://github.com/LibreCourseUY/libreblog).
+
 Hope you have a good read!
+
+Yours truly,
 - The Editor
 <br></br>
