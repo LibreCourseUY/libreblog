@@ -4,7 +4,7 @@ title: "LibreCourseUY"
 
 Welcome to LibreCourseUY's dev log!
 
-In this page, we document everything we do, from codenights, events, project (and their progress), in this page!
+In this page, we document everything we do, from codenights, events, project (and their progress), etc.
 
 <div style="
   border-left: 4px solid;
