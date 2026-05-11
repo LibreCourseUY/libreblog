@@ -27,3 +27,10 @@ In this page, we document everything we do, from codenights, events, project (an
 
 ### What is LibreCourseUY?
 LibreCourseUY is a non-profit initiative based in Uruguay that helps programmers, from aspiring developers to experienced professionals, contribute to Free and Open Source Software.
+
+### About this Dev Log
+The purpose of this Dev Log is to allow newly joined dev to see what we've been up to, and what do they need to check on to work on our projects.
+
+Hope you have a good read!
+- The Editor
+<br></br>
