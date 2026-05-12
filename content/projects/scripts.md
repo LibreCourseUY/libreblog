@@ -12,4 +12,4 @@ Eventually, if the repo grows enough, we may separate scripts in subfolders, by 
 
 The idea of the repo is just to share **the smallest things we make**, as it is a good way to sample how we work in things we usually only do for ourselves, and what to improve when shipping to a broader audience.
 
-> <small>Project Log updated by The Editor on 12/05/2026</small>
+<small>Project Log updated by The Editor on 12/05/2026</small>
