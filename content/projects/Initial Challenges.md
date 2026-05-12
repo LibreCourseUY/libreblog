@@ -2,7 +2,7 @@
 title: Initial Challenges
 ---
 
-[Initial Challenges repo](https://github.com/LibreCourseUY/initial-Challenges)
+[Initial Challenges repo](https://github.com/LibreCourseUY/initial-Challenges).
 
 Each challenge was picked to cover a broad range of language features, giving you a solid foundation.
 
