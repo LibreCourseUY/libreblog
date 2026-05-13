@@ -45,9 +45,12 @@ menu:
     - name: Codenights
       url: /codenights/
       weight: 2
+    - name: TL:DR
+      url: /tldr/
+      weight: 2
     - name: Projects
       url: /projects/
-      weight: 3
+      weight: 4
 
 markup:
   highlight:
