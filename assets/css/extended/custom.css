@@ -6,3 +6,15 @@
 .home-info .entry-content {
     color: var(--primary);
 }
+
+/* Bold color - light mode */
+:root strong,
+:root b {
+    color: #242cbf;
+}
+
+/* Bold color - dark mode */
+.dark strong,
+.dark b {
+    color: #6b74f0;
+}
