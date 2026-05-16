@@ -12,6 +12,6 @@ At this moment there's no design rules, so the contributor can make their own de
 
 Every contributor can add their own components, following the rules at [react-components repository #structure](https://github.com/LibreCourseUY/react-components#structure).
 
-Then there will be someone (probably me) that reviews the component's code and gives feedback about what can be improved.
+Then there will be someone (Kevin Ramirez) that reviews the component's code and gives feedback about what can be improved.
 
 <small>Project Log updated by Kevin Ramirez on 15/05/2026</small>
