@@ -14,4 +14,4 @@ Every contributor can add their own components, following the rules at [react-co
 
 Then there will be someone (probably me) that reviews the component's code and gives feedback about what can be improved.
 
-<small>Project Log updated by Kevin Ramirez on 12/05/2026</small>
+<small>Project Log updated by Kevin Ramirez on 15/05/2026</small>
