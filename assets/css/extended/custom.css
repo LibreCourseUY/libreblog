@@ -18,3 +18,97 @@
 .dark b {
     color: #6b74f0;
 }
+
+/* ── Light mode: code blocks with light background ── */
+:root {
+    --code-block-bg: var(--code-bg);
+}
+
+.md-content pre code {
+    color: var(--content);
+}
+
+/* ── Light mode: chroma syntax (Catppuccin Latte) ── */
+:root .chroma,
+:root .bg { color: #4c4f69; }
+:root .chroma .hl { background-color: #e6e9ef; }
+:root .chroma .lnt,
+:root .chroma .ln { color: #9ca0b0; }
+
+:root .chroma .k,
+:root .chroma .kp,
+:root .chroma .kr,
+:root .chroma .nt { color: #8839ef; }
+
+:root .chroma .kc,
+:root .chroma .ne,
+:root .chroma .nn,
+:root .chroma .py { color: #fe640b; }
+
+:root .chroma .kd,
+:root .chroma .kt,
+:root .chroma .sa { color: #d20f39; }
+
+:root .chroma .kn,
+:root .chroma .ni,
+:root .chroma .sr { color: #179299; }
+
+:root .chroma .na,
+:root .chroma .nd,
+:root .chroma .nf,
+:root .chroma .fm,
+:root .chroma .dl,
+:root .chroma .se { color: #1e66f5; }
+
+:root .chroma .nb,
+:root .chroma .bp,
+:root .chroma .nl,
+:root .chroma .o,
+:root .chroma .ow { color: #04a5e5; }
+
+:root .chroma .nc,
+:root .chroma .no,
+:root .chroma .gh,
+:root .chroma .gu { color: #df8e1d; }
+
+:root .chroma .nv,
+:root .chroma .vc,
+:root .chroma .vg,
+:root .chroma .vi,
+:root .chroma .vm { color: #dc8a78; }
+
+:root .chroma .s,
+:root .chroma .sb,
+:root .chroma .sc,
+:root .chroma .s2,
+:root .chroma .si,
+:root .chroma .sx,
+:root .chroma .s1,
+:root .chroma .ss { color: #40a02b; }
+
+:root .chroma .sd,
+:root .chroma .sh { color: #9ca0b0; }
+
+:root .chroma .c,
+:root .chroma .ch,
+:root .chroma .cm,
+:root .chroma .c1,
+:root .chroma .cs,
+:root .chroma .cp { color: #9ca0b0; }
+
+:root .chroma .cpf { color: #9ca0b0; }
+
+:root .chroma .m,
+:root .chroma .mb,
+:root .chroma .mf,
+:root .chroma .mh,
+:root .chroma .mi,
+:root .chroma .il,
+:root .chroma .mo { color: #fe640b; }
+
+:root .chroma .err,
+:root .chroma .gr,
+:root .chroma .gt { color: #d20f39; }
+
+:root .chroma .gd { color: #d20f39; background-color: #e6e9ef; }
+:root .chroma .gi { color: #40a02b; background-color: #e6e9ef; }
