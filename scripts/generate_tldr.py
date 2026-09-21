@@ -30,7 +30,7 @@ STYLE_FILE = REPO_ROOT / "scripts" / "tldr_style.md"
 FEEDS_FILE = REPO_ROOT / "scripts" / "feeds.txt"
 
 USER_AGENT = "libreblog-tldr/1.0 (+https://github.com/LibreCourseUY/libreblog)"
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.6-flash"
 MAX_ITEMS = 60
 PER_FEED = 8
 MAX_SUMMARY = 400

@@ -45,7 +45,7 @@ GEMINI_API_KEY=... .venv/bin/python scripts/generate_tldr.py --dry-run
 GEMINI_API_KEY=... .venv/bin/python scripts/generate_tldr.py
 ```
 
-Useful flags: `--since-days N`, `--model gemini-2.5-pro`, `--force`.
+Useful flags: `--since-days N`, `--model gemini-3.6-pro`, `--force`.
 
 The workflow also supports manual dispatch with the `dry_run` and `since_days`
 inputs.
