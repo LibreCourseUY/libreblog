@@ -45,7 +45,7 @@ GEMINI_API_KEY=... .venv/bin/python scripts/generate_tldr.py --dry-run
 GEMINI_API_KEY=... .venv/bin/python scripts/generate_tldr.py
 ```
 
-Useful flags: `--since-days N`, `--model gemini-3.6-pro`, `--force`.
+Useful flags: `--since-days N`, `--model gemini-flash-lite-latest`, `--force`.
 
 The generator retries transient Gemini errors and falls back to other
 available models when the requested one is overloaded. Set `TLDR_MODELS` to a

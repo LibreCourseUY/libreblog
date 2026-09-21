@@ -198,7 +198,7 @@ class ModelCandidateTests(unittest.TestCase):
     def test_requested_model_is_first_and_hardcoded_fallback_present(self):
         candidates = g.model_candidates(self._client(), "gemini-3.6-flash")
         self.assertEqual(candidates[0], "gemini-3.6-flash")
-        self.assertIn("gemini-3.6-pro", candidates)
+        self.assertIn("gemini-flash-lite-latest", candidates)
         self.assertIn("gemini-2.5-flash", candidates)
         self.assertNotIn("text-embedding-004", candidates)
 
