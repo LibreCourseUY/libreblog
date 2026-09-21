@@ -1,5 +1,7 @@
+import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 import scripts.generate_tldr as g
@@ -80,6 +82,56 @@ class FeedTests(unittest.TestCase):
         feeds = g.read_feeds()
         self.assertGreater(len(feeds), 0)
         self.assertTrue(all(feed.startswith("http") for feed in feeds))
+
+
+class FrontMatterTests(unittest.TestCase):
+    def test_injects_missing_title_and_date(self):
+        result = g.normalize_front_matter("---\ntitle: something\n---\n\nBody\n", "v0.9", "2026-09-21")
+        self.assertIn("title: v0.9", result)
+        self.assertIn("date: 2026-09-21", result)
+        self.assertEqual(result.count("title:"), 1)
+
+    def test_adds_front_matter_when_absent(self):
+        result = g.normalize_front_matter("Just a body\n", "v1.0", "2026-09-21")
+        self.assertTrue(result.startswith("---\ntitle: v1.0\ndate: 2026-09-21\n---\n"))
+
+    def test_preserves_other_front_matter_fields(self):
+        result = g.normalize_front_matter(
+            "---\ntitle: x\ndraft: true\n---\n\nBody\n", "v0.9", "2026-09-21"
+        )
+        self.assertIn("draft: true", result)
+
+
+class GenerateTests(unittest.TestCase):
+    def test_retries_until_valid(self):
+        calls = {"count": 0}
+
+        def fake_call(api_key, model, style, prompt):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return "---\ntitle: v0.9\n---\n\nno sections here\n"
+            return make_edition()
+
+        original = g.call_gemini
+        g.call_gemini = fake_call
+        os.environ["GEMINI_API_KEY"] = "test"
+        articles = [
+            {
+                "source": "s",
+                "title": "t",
+                "url": "https://example.com/1",
+                "published": datetime.now(timezone.utc),
+                "summary": "",
+            }
+        ]
+        try:
+            result = g.generate(articles, "v0.9", "model", 7)
+        finally:
+            g.call_gemini = original
+            os.environ.pop("GEMINI_API_KEY", None)
+
+        self.assertEqual(calls["count"], 2)
+        self.assertEqual(g.validate(result, "v0.9"), [])
 
 
 if __name__ == "__main__":

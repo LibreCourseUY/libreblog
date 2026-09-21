@@ -47,18 +47,19 @@ def main() -> int:
         ref.raise_for_status()
         base_head = ref.json()["object"]["sha"]
 
-        # createCommitOnBranch requires the target branch to already exist.
+        # Recreate the automation branch from the base so retries never hit a
+        # stale branch or a duplicate path in createCommitOnBranch.
+        existing = client.get(f"{API}/repos/{repo}/git/ref/heads/{branch}")
+        if existing.status_code == 200:
+            deleted = client.delete(f"{API}/repos/{repo}/git/refs/heads/{branch}")
+            deleted.raise_for_status()
+
         created = client.post(
             f"{API}/repos/{repo}/git/refs",
             json={"ref": f"refs/heads/{branch}", "sha": base_head},
         )
-        if created.status_code == 422:
-            existing = client.get(f"{API}/repos/{repo}/git/ref/heads/{branch}")
-            existing.raise_for_status()
-            expected_head = existing.json()["object"]["sha"]
-        else:
-            created.raise_for_status()
-            expected_head = base_head
+        created.raise_for_status()
+        expected_head = base_head
 
         payload = {
             "query": GRAPHQL_QUERY,

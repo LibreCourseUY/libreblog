@@ -238,6 +238,27 @@ def sanitize(markdown: str) -> str:
     return text.rstrip() + "\n"
 
 
+def normalize_front_matter(markdown: str, version: str, today: str | None = None) -> str:
+    """Force title/date in the front matter so a model omission can't fail validation."""
+    date = today or datetime.now(timezone.utc).date().isoformat()
+    text = markdown.strip()
+    body = text
+    fields: list[str] = []
+
+    if text.startswith("---"):
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            fields = [
+                line
+                for line in parts[1].strip("\n").splitlines()
+                if line.strip() and not re.match(r"^\s*(title|date)\s*:", line)
+            ]
+            body = parts[2]
+
+    header = [f"title: {version}", f"date: {date}", *fields]
+    return "---\n" + "\n".join(header) + "\n---\n\n" + body.strip("\n") + "\n"
+
+
 def tech_news_block(markdown: str) -> str:
     match = re.search(r"### Tech News\n(.*?)(?:\n---\n|\Z)", markdown, re.DOTALL)
     return match.group(1) if match else ""
@@ -284,7 +305,7 @@ def generate(articles: list[dict], version: str, model: str, since_days: int) ->
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         prompt = build_prompt(articles, version, since_days, feedback)
-        markdown = sanitize(call_gemini(api_key, model, style, prompt))
+        markdown = normalize_front_matter(sanitize(call_gemini(api_key, model, style, prompt)), version)
         problems = validate(markdown, version)
         if not problems:
             log(f"attempt {attempt}: valid edition")
