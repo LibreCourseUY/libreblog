@@ -1,0 +1,13 @@
+# Tech news RSS/Atom feeds for the weekly TL;DR generator.
+# One URL per line. Lines starting with "#" are ignored.
+
+https://hnrss.org/frontpage
+https://lobste.rs/rss
+https://www.phoronix.com/rss.php
+https://feeds.arstechnica.com/arstechnica/index
+https://www.theverge.com/rss/index.xml
+https://techcrunch.com/feed/
+https://www.theregister.com/headlines.atom
+https://blog.cloudflare.com/rss/
+https://github.blog/feed/
+https://blog.google/technology/ai/rss/
