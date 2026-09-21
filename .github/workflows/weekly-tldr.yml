@@ -51,15 +51,6 @@ jobs:
         if: ${{ !inputs.dry_run && steps.gen.outputs.file != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          branch="automation/tldr-${{ steps.gen.outputs.version }}"
-          git checkout -b "$branch"
-          git add "${{ steps.gen.outputs.file }}"
-          git commit -m "docs: add weekly TL;DR ${{ steps.gen.outputs.version }}"
-          git push origin "$branch"
-          gh pr create --base main --head "$branch" \
-            --title "Weekly TL;DR ${{ steps.gen.outputs.version }}" \
-            --body "Auto-generated from the weekly RSS digest. Review the links and merge to publish."
+          TLDR_VERSION: ${{ steps.gen.outputs.version }}
+          TLDR_FILE: ${{ steps.gen.outputs.file }}
+        run: python scripts/publish_tldr.py
