@@ -17,6 +17,7 @@ import html
 import os
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -36,6 +37,8 @@ PER_FEED = 8
 MAX_SUMMARY = 400
 REQUIRED_ITEMS = 14
 MAX_ATTEMPTS = 3
+API_ATTEMPTS = 4
+API_BACKOFF_SECONDS = 5
 VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.md$")
 DATE_RE = re.compile(r"^date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 
@@ -210,20 +213,40 @@ def build_prompt(articles: list[dict], version: str, since_days: int, feedback: 
     return "\n".join(lines)
 
 
+def retry_call(func):
+    """Run func, retrying transient API failures (503/429/etc.) with backoff."""
+    last_error: Exception | None = None
+    for attempt in range(1, API_ATTEMPTS + 1):
+        try:
+            return func()
+        except Exception as error:  # noqa: BLE001 - also covers google.genai errors
+            last_error = error
+            if attempt == API_ATTEMPTS:
+                break
+            delay = API_BACKOFF_SECONDS * (2 ** (attempt - 1))
+            log(f"gemini attempt {attempt} failed ({error}); retrying in {delay}s")
+            time.sleep(delay)
+    raise SystemExit(f"Gemini request failed after {API_ATTEMPTS} attempts: {last_error}")
+
+
 def call_gemini(api_key: str, model: str, style: str, prompt: str) -> str:
     from google import genai
     from google.genai import types
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(system_instruction=style, temperature=0.7),
-    )
-    text = (response.text or "").strip()
-    if not text:
-        raise SystemExit("Gemini returned an empty response")
-    return text
+
+    def request() -> str:
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(system_instruction=style, temperature=0.7),
+        )
+        text = (response.text or "").strip()
+        if not text:
+            raise RuntimeError("Gemini returned an empty response")
+        return text
+
+    return retry_call(request)
 
 
 def strip_code_fence(markdown: str) -> str:

@@ -134,5 +134,30 @@ class GenerateTests(unittest.TestCase):
         self.assertEqual(g.validate(result, "v0.9"), [])
 
 
+class RetryTests(unittest.TestCase):
+    def setUp(self):
+        self._sleep = g.time.sleep
+        g.time.sleep = lambda *_: None
+
+    def tearDown(self):
+        g.time.sleep = self._sleep
+
+    def test_retries_transient_failures(self):
+        calls = {"count": 0}
+
+        def flaky():
+            calls["count"] += 1
+            if calls["count"] < 3:
+                raise RuntimeError("503 UNAVAILABLE")
+            return "ok"
+
+        self.assertEqual(g.retry_call(flaky), "ok")
+        self.assertEqual(calls["count"], 3)
+
+    def test_gives_up_after_max_attempts(self):
+        with self.assertRaises(SystemExit):
+            g.retry_call(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+
+
 if __name__ == "__main__":
     unittest.main()
