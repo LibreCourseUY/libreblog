@@ -159,5 +159,54 @@ class RetryTests(unittest.TestCase):
             g.retry_call(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
 
 
+class _Model:
+    def __init__(self, name, actions):
+        self.name = name
+        self.supported_actions = actions
+
+
+class _Client:
+    def __init__(self, items):
+        self._items = items
+
+    @property
+    def models(self):
+        return self
+
+    def list(self):
+        return self._items
+
+
+class ModelCandidateTests(unittest.TestCase):
+    def setUp(self):
+        self._env = os.environ.pop("TLDR_MODELS", None)
+
+    def tearDown(self):
+        if self._env is not None:
+            os.environ["TLDR_MODELS"] = self._env
+
+    @staticmethod
+    def _client():
+        return _Client(
+            [
+                _Model("models/text-embedding-004", ["embedContent"]),
+                _Model("models/gemini-2.5-flash", ["generateContent"]),
+                _Model("models/gemini-3.6-flash", ["generateContent"]),
+            ]
+        )
+
+    def test_requested_model_is_first_and_hardcoded_fallback_present(self):
+        candidates = g.model_candidates(self._client(), "gemini-3.6-flash")
+        self.assertEqual(candidates[0], "gemini-3.6-flash")
+        self.assertIn("gemini-3.6-pro", candidates)
+        self.assertIn("gemini-2.5-flash", candidates)
+        self.assertNotIn("text-embedding-004", candidates)
+
+    def test_env_models_are_honored(self):
+        os.environ["TLDR_MODELS"] = "custom-model"
+        candidates = g.model_candidates(_Client([]), "gemini-3.6-flash")
+        self.assertIn("custom-model", candidates)
+
+
 if __name__ == "__main__":
     unittest.main()

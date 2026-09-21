@@ -37,8 +37,10 @@ PER_FEED = 8
 MAX_SUMMARY = 400
 REQUIRED_ITEMS = 14
 MAX_ATTEMPTS = 3
-API_ATTEMPTS = 4
+API_ATTEMPTS = 3
 API_BACKOFF_SECONDS = 5
+DEFAULT_FALLBACK_MODELS = ("gemini-3.6-pro",)
+MAX_MODEL_CANDIDATES = 6
 VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.md$")
 DATE_RE = re.compile(r"^date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 
@@ -229,24 +231,77 @@ def retry_call(func):
     raise SystemExit(f"Gemini request failed after {API_ATTEMPTS} attempts: {last_error}")
 
 
+NON_TEXT_MODEL_HINTS = ("embedding", "aqa", "image", "tts", "imagen", "veo")
+
+
+def list_generate_models(client) -> list[str]:
+    """Best-effort list of models that support generateContent, newest flash first."""
+    names: set[str] = set()
+    try:
+        for model in client.models.list():
+            actions = getattr(model, "supported_actions", None)
+            if actions is None:
+                actions = getattr(model, "supported_generation_methods", None) or []
+            if actions and "generateContent" not in actions:
+                continue
+            name = (getattr(model, "name", "") or "").rsplit("/", 1)[-1]
+            if not name or any(hint in name.lower() for hint in NON_TEXT_MODEL_HINTS):
+                continue
+            names.add(name)
+    except Exception as error:  # noqa: BLE001 - listing is best-effort
+        log(f"warn: could not list Gemini models: {error}")
+
+    flash = sorted((name for name in names if "flash" in name), reverse=True)
+    others = sorted((name for name in names if "flash" not in name), reverse=True)
+    return flash + others
+
+
+def model_candidates(client, requested: str) -> list[str]:
+    candidates = [requested]
+    for extra in os.environ.get("TLDR_MODELS", "").split(","):
+        extra = extra.strip()
+        if extra and extra not in candidates:
+            candidates.append(extra)
+    for fallback in DEFAULT_FALLBACK_MODELS:
+        if fallback not in candidates:
+            candidates.append(fallback)
+    for name in list_generate_models(client):
+        if name not in candidates:
+            candidates.append(name)
+        if len(candidates) >= MAX_MODEL_CANDIDATES:
+            break
+    return candidates[:MAX_MODEL_CANDIDATES]
+
+
 def call_gemini(api_key: str, model: str, style: str, prompt: str) -> str:
     from google import genai
     from google.genai import types
 
     client = genai.Client(api_key=api_key)
+    config = types.GenerateContentConfig(system_instruction=style, temperature=0.7)
+    last_error: Exception | None = None
 
-    def request() -> str:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(system_instruction=style, temperature=0.7),
-        )
-        text = (response.text or "").strip()
-        if not text:
-            raise RuntimeError("Gemini returned an empty response")
-        return text
+    for candidate in model_candidates(client, model):
+        def request(candidate=candidate) -> str:
+            response = client.models.generate_content(
+                model=candidate, contents=prompt, config=config
+            )
+            text = (response.text or "").strip()
+            if not text:
+                raise RuntimeError("Gemini returned an empty response")
+            return text
 
-    return retry_call(request)
+        try:
+            result = retry_call(request)
+        except SystemExit as error:
+            last_error = error
+            log(f"model {candidate} exhausted; trying next candidate")
+            continue
+        if candidate != model:
+            log(f"info: used fallback model {candidate}")
+        return result
+
+    raise SystemExit(f"Gemini request failed for all candidate models: {last_error}")
 
 
 def strip_code_fence(markdown: str) -> str:
