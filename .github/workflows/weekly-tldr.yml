@@ -1,0 +1,65 @@
+name: Weekly TL;DR
+
+on:
+  schedule:
+    # Mondays at 12:00 UTC (09:00 in Montevideo)
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Generate and print the draft without opening a pull request
+        type: boolean
+        default: false
+      since_days:
+        description: Days of news to include
+        type: string
+        default: "7"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: weekly-tldr
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Generate TL;DR
+        id: gen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SINCE_DAYS: ${{ inputs.since_days || '7' }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: python scripts/generate_tldr.py --since-days "$SINCE_DAYS" $DRY_RUN
+
+      - name: Open pull request
+        if: ${{ !inputs.dry_run && steps.gen.outputs.file != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="automation/tldr-${{ steps.gen.outputs.version }}"
+          git checkout -b "$branch"
+          git add "${{ steps.gen.outputs.file }}"
+          git commit -m "docs: add weekly TL;DR ${{ steps.gen.outputs.version }}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Weekly TL;DR ${{ steps.gen.outputs.version }}" \
+            --body "Auto-generated from the weekly RSS digest. Review the links and merge to publish."
