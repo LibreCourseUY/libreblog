@@ -34,6 +34,8 @@ DEFAULT_MODEL = "gemini-3.6-flash"
 MAX_ITEMS = 60
 PER_FEED = 8
 MAX_SUMMARY = 400
+REQUIRED_ITEMS = 14
+MAX_ATTEMPTS = 3
 VERSION_RE = re.compile(r"^v(\d+)\.(\d+)\.md$")
 DATE_RE = re.compile(r"^date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.MULTILINE)
 
@@ -112,7 +114,10 @@ def collect_articles(since_days: int) -> list[dict]:
     window_start = datetime.now(timezone.utc) - timedelta(days=since_days)
     feeds = read_feeds()
     with httpx.Client(
-        headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml, application/atom+xml, */*"},
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/rss+xml, application/atom+xml, */*",
+        },
         timeout=20.0,
         follow_redirects=True,
     ) as client:
@@ -170,12 +175,13 @@ def reference_editions(limit: int = 3) -> str:
     return "\n\n".join(blocks)
 
 
-def build_prompt(articles: list[dict], version: str, since_days: int) -> str:
+def build_prompt(articles: list[dict], version: str, since_days: int, feedback: dict | None) -> str:
     now = datetime.now(timezone.utc)
     start = (now - timedelta(days=since_days)).date().isoformat()
     lines = [
         f"Today is {now.date().isoformat()}.",
         f"Write edition {version} covering the week {start} to {now.date().isoformat()}.",
+        f"The edition must contain exactly {REQUIRED_ITEMS} bullet items under '### Tech News'.",
         "",
         "Reference editions (match the tone and structure, not the content):",
         reference_editions(),
@@ -188,21 +194,26 @@ def build_prompt(articles: list[dict], version: str, since_days: int) -> str:
         lines.append(f"   {article['url']}")
         if article["summary"]:
             lines.append(f"   {article['summary']}")
-    lines.append("")
+
+    if feedback:
+        lines += [
+            "",
+            "Your previous draft had these problems:",
+            *(f"- {problem}" for problem in feedback["problems"]),
+            "",
+            "Previous draft:",
+            feedback["draft"],
+            "",
+        ]
+
     lines.append(f"Now return the full Markdown file for {version}, and nothing else.")
     return "\n".join(lines)
 
 
-def generate(articles: list[dict], version: str, model: str, since_days: int) -> str:
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise SystemExit("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set")
-
+def call_gemini(api_key: str, model: str, style: str, prompt: str) -> str:
     from google import genai
     from google.genai import types
 
-    style = STYLE_FILE.read_text(encoding="utf-8")
-    prompt = build_prompt(articles, version, since_days)
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
         model=model,
@@ -227,7 +238,16 @@ def sanitize(markdown: str) -> str:
     return text.rstrip() + "\n"
 
 
-def validate(markdown: str, version: str) -> None:
+def tech_news_block(markdown: str) -> str:
+    match = re.search(r"### Tech News\n(.*?)(?:\n---\n|\Z)", markdown, re.DOTALL)
+    return match.group(1) if match else ""
+
+
+def news_item_count(markdown: str) -> int:
+    return len(re.findall(r"^- .+", tech_news_block(markdown), re.MULTILINE))
+
+
+def validate(markdown: str, version: str) -> list[str]:
     problems = []
     if not markdown.startswith("---\n"):
         problems.append("missing YAML front matter")
@@ -239,14 +259,40 @@ def validate(markdown: str, version: str) -> None:
         problems.append("missing '### Tech News' section")
     if len(re.findall(r"^####\s+", markdown, re.MULTILINE)) < 2:
         problems.append("needs at least two topic subsections")
-    if len(re.findall(r"\]\(https?://", markdown)) < 3:
-        problems.append("needs at least three source links")
+    if len(re.findall(r"\]\(https?://", markdown)) < REQUIRED_ITEMS:
+        problems.append(f"needs at least {REQUIRED_ITEMS} source links")
     if "- The Editor" not in markdown:
         problems.append("missing the '- The Editor' footer")
     if "\u2014" in markdown or "\u2013" in markdown or re.search(r"\s--\s", markdown):
         problems.append("contains a forbidden dash")
-    if problems:
-        raise SystemExit("generated TL;DR failed validation: " + "; ".join(problems))
+
+    items = news_item_count(markdown)
+    if items != REQUIRED_ITEMS:
+        problems.append(f"expected {REQUIRED_ITEMS} news items, found {items}")
+
+    return problems
+
+
+def generate(articles: list[dict], version: str, model: str, since_days: int) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise SystemExit("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set")
+
+    style = STYLE_FILE.read_text(encoding="utf-8")
+    feedback = None
+    problems = ["no attempt made"]
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        prompt = build_prompt(articles, version, since_days, feedback)
+        markdown = sanitize(call_gemini(api_key, model, style, prompt))
+        problems = validate(markdown, version)
+        if not problems:
+            log(f"attempt {attempt}: valid edition")
+            return markdown
+        log(f"attempt {attempt}: invalid ({'; '.join(problems)}), retrying")
+        feedback = {"problems": problems, "draft": markdown}
+
+    raise SystemExit("generated TL;DR failed validation: " + "; ".join(problems))
 
 
 def set_output(name: str, value: str) -> None:
@@ -275,12 +321,11 @@ def main() -> int:
 
     articles = collect_articles(args.since_days)
     log(f"collected {len(articles)} articles from the last {args.since_days} days")
-    if len(articles) < 5:
-        raise SystemExit("not enough articles to write a TL;DR")
+    if len(articles) < REQUIRED_ITEMS:
+        raise SystemExit(f"not enough articles to write {REQUIRED_ITEMS} news items")
 
     version = next_version()
-    markdown = sanitize(generate(articles, version, args.model, args.since_days))
-    validate(markdown, version)
+    markdown = generate(articles, version, args.model, args.since_days)
 
     if args.dry_run:
         print(markdown)

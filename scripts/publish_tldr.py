@@ -45,7 +45,20 @@ def main() -> int:
     with httpx.Client(timeout=30.0, headers=headers(token)) as client:
         ref = client.get(f"{API}/repos/{repo}/git/ref/heads/{base}")
         ref.raise_for_status()
-        expected_head = ref.json()["object"]["sha"]
+        base_head = ref.json()["object"]["sha"]
+
+        # createCommitOnBranch requires the target branch to already exist.
+        created = client.post(
+            f"{API}/repos/{repo}/git/refs",
+            json={"ref": f"refs/heads/{branch}", "sha": base_head},
+        )
+        if created.status_code == 422:
+            existing = client.get(f"{API}/repos/{repo}/git/ref/heads/{branch}")
+            existing.raise_for_status()
+            expected_head = existing.json()["object"]["sha"]
+        else:
+            created.raise_for_status()
+            expected_head = base_head
 
         payload = {
             "query": GRAPHQL_QUERY,

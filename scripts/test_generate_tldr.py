@@ -4,27 +4,32 @@ from pathlib import Path
 
 import scripts.generate_tldr as g
 
-VALID = """---
-title: v0.9
-date: 2026-09-21
----
 
-Here is what mattered (Sep 14 to 21, 2026).
+def make_edition(items: int = 14) -> str:
+    first = (items + 1) // 2
+    lines = [
+        "---",
+        "title: v0.9",
+        "date: 2026-09-21",
+        "---",
+        "",
+        "Here is what mattered (Sep 14 to 21, 2026).",
+        "",
+        "### Tech News",
+        "",
+        "#### Linux",
+    ]
+    for index in range(first):
+        lines.append(f"- **Item {index}** happened ([source](https://example.com/{index})).")
+    lines.append("")
+    lines.append("#### Infra")
+    for index in range(first, items):
+        lines.append(f"- **Item {index}** happened ([source](https://example.com/{index})).")
+    lines += ["", "---", "", "That's it for this week.", "", "- The Editor"]
+    return "\n".join(lines) + "\n"
 
-### Tech News
 
-#### Linux
-**Linux 7.4** shipped with driver fixes ([source](https://example.com/a)).
-
-#### Infra
-**New chips** arrived ([source](https://example.com/b)) and **more memory** too ([source](https://example.com/c)).
-
----
-
-That's it for this week.
-
-- The Editor
-"""
+VALID = make_edition()
 
 
 class VersionTests(unittest.TestCase):
@@ -56,16 +61,18 @@ class SanitizeTests(unittest.TestCase):
 
 class ValidateTests(unittest.TestCase):
     def test_accepts_a_valid_edition(self):
-        g.validate(g.sanitize(VALID), "v0.9")
+        self.assertEqual(g.validate(g.sanitize(VALID), "v0.9"), [])
 
-    def test_rejects_too_few_source_links(self):
-        broken = VALID.replace("([source](https://example.com/a))", "")
-        with self.assertRaises(SystemExit):
-            g.validate(g.sanitize(broken), "v0.9")
+    def test_counts_news_items(self):
+        self.assertEqual(g.news_item_count(VALID), 14)
+
+    def test_rejects_too_few_items(self):
+        problems = g.validate(g.sanitize(make_edition(9)), "v0.9")
+        self.assertTrue(any("news items" in problem for problem in problems))
 
     def test_rejects_a_missing_footer(self):
-        with self.assertRaises(SystemExit):
-            g.validate(g.sanitize(VALID.replace("- The Editor", "")), "v0.9")
+        problems = g.validate(g.sanitize(VALID.replace("- The Editor", "")), "v0.9")
+        self.assertTrue(any("footer" in problem for problem in problems))
 
 
 class FeedTests(unittest.TestCase):

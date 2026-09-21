@@ -21,7 +21,7 @@ Monday at 12:00 UTC. It:
 
 1. pulls the last week of tech news from the RSS feeds in `scripts/feeds.txt`;
 2. asks Gemini to write an edition in the house style (`scripts/tldr_style.md`,
-   using the latest editions as examples);
+   using the latest editions as examples) with exactly 14 news items;
 3. validates the result (front matter, sections, source links, footer, no
    em dashes, no double hyphens) and writes `content/tldr/vX.Y.md`;
 4. opens a pull request. Merge it to publish.
