@@ -1,0 +1,28 @@
+name: DCO
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify Signed-off-by
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          for c in $(git rev-list "$BASE..$HEAD"); do
+            if ! git log -1 --format=%B "$c" | grep -qiE '^Signed-off-by: .+ <[^>]+>'; then
+              echo "::error::Commit $c is missing a Signed-off-by line (use: git commit -s)"
+              status=1
+            fi
+          done
+          exit $status
